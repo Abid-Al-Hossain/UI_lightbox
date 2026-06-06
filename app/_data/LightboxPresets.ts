@@ -1,6 +1,6 @@
-import type { LightboxState, StudioPreset } from "../types";
+import type { LegacyLightboxPresetState, StudioPreset } from "../types";
 
-export const DEFAULT_LIGHTBOX_STATE: LightboxState = {
+export const DEFAULT_LIGHTBOX_STATE: LegacyLightboxPresetState = {
   "title": "Production component",
   "description": "Button-canon standalone studio with native controls, structured presets, and React-only export parity.",
   "label": "Component",

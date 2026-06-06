@@ -27,7 +27,6 @@ export type LightboxState = {
   previewState: "default" | "hover" | "focus" | "active" | "open" | "closed" | "selected" | "loading" | "empty" | "error" | "success";
   motion: boolean;
   disabled: boolean;
-  role: "region" | "group" | "status" | "alert" | "dialog" | "menu" | "menubar" | "navigation" | "list" | "tree" | "table" | "tablist" | "form" | "textbox" | "img" | "application";
   mediaCount: number;
   activeIndex: number;
   showThumbnails: boolean;
@@ -37,7 +36,9 @@ export type LightboxState = {
   modal: boolean;
 };
 
-export type StudioPreset = { id: string; family: string; archetype: string; variant: string; size: string; tags: string[]; state: LightboxState };
+export type LegacyLightboxPresetState = LightboxState & { role?: "dialog" };
+
+export type StudioPreset = { id: string; family: string; archetype: string; variant: string; size: string; tags: string[]; state: LegacyLightboxPresetState };
 
 export const SECTIONS: Array<{ id: SectionId; label: string }> = [
   {

@@ -1,24 +1,205 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { LightboxState } from "../types";
 
-function shell(state: LightboxState): CSSProperties {
-  return { width: state.width, minHeight: state.height, padding: state.padding, gap: state.gap, borderRadius: state.radius, border: `${state.borderWidth}px solid ${state.border}`, boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow}px rgba(0,0,0,.28)`, background: state.background, color: state.foreground, fontFamily: state.fontFamily, opacity: state.disabled ? 0.55 : 1 };
+type LightboxItem = {
+  src: string;
+  alt: string;
+  title: string;
+  caption: string;
+};
+
+function createLightboxItems(count: number, label: string): LightboxItem[] {
+  const safeCount = Math.max(1, Math.min(10, Math.round(count)));
+
+  return Array.from({ length: safeCount }, (_, index) => {
+    const hue = (index * 47 + 190) % 360;
+    const title = `${label} ${index + 1}`;
+    const caption = `${title} caption with keyboard-safe previous, next, close, Escape, and outside-dismiss controls.`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="hsl(${hue} 78% 42%)"/><stop offset="1" stop-color="hsl(${(hue + 58) % 360} 84% 64%)"/></linearGradient></defs><rect width="960" height="640" fill="url(#g)"/><circle cx="${220 + index * 12}" cy="${170 + index * 8}" r="120" fill="rgba(255,255,255,.22)"/><path d="M120 520 370 290l150 130 110-88 210 188Z" fill="rgba(15,23,42,.45)"/><text x="72" y="104" fill="white" font-family="Arial" font-size="54" font-weight="700">${title}</text></svg>`;
+
+    return {
+      src: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+      alt: `${title} preview image`,
+      title,
+      caption,
+    };
+  });
 }
 
 export default function LivePreview({ state }: { state: LightboxState }) {
-  const model = state as Record<string, unknown>;
-  const numberValue = (key: string, fallback: number) => typeof model[key] === "number" ? model[key] : fallback;
-  const stringValue = (key: string, fallback: string) => typeof model[key] === "string" ? model[key] : fallback;
-  const boolValue = (key: string) => typeof model[key] === "boolean" ? model[key] : false;
-  const count = numberValue("itemCount", numberValue("rowCount", numberValue("slideCount", numberValue("imageCount", numberValue("filterCount", numberValue("controlCount", 5))))));
-  const items = Array.from({ length: count }, (_, index) => index + 1);
-  const badge = (text: string) => <span className="rounded-full border px-3 py-1 text-xs" style={{ borderColor: state.border, color: state.accent }}>{text}</span>;
-  const panel = shell(state);
-  if ("chartType" in model) return <section role="img" aria-label={state.ariaLabel} style={panel} className="grid content-center"><h3 style={{ fontSize: state.titleSize }}>{state.title}</h3><div className="flex items-end gap-3">{items.map((item) => <div key={item} className="w-10 rounded-t-xl" style={{ height: 36 + item * 18, background: state.accent }} />)}</div></section>;
-  if ("src" in model && ("showTimeline" in model || "showCaptions" in model)) return <section role={state.role} aria-label={state.ariaLabel} style={panel} className="grid content-center"><h3>{state.title}</h3>{"showTimeline" in model ? <audio controls muted={boolValue("muted")} loop={boolValue("loop")} preload={stringValue("preload", "metadata")} className="w-full" /> : <video controls muted={boolValue("muted")} loop={boolValue("loop")} preload={stringValue("preload", "metadata")} poster={stringValue("poster", "")} className="w-full rounded-xl bg-black/40" />}</section>;
-  if (state.role === "dialog") return <div className="grid place-items-center"><section role="dialog" aria-label={state.ariaLabel} style={panel} className="grid"><h3 style={{ fontSize: state.titleSize }}>{state.title}</h3><p style={{ color: stringValue("muted", "#94a3b8") }}>{state.description}</p><div className="flex gap-2"><button type="button" className="rounded-xl px-4 py-2" style={{ background: state.accent, color: "#020617" }}>Action</button><button type="button" className="rounded-xl border px-4 py-2" style={{ borderColor: state.border }}>Cancel</button></div></section></div>;
-  if (state.role === "table") return <table role="table" aria-label={state.ariaLabel} style={panel}><caption>{stringValue("caption", state.title)}</caption><tbody>{items.map((item) => <tr key={item}><th className="p-2 text-left">Row {item}</th><td className="p-2">{state.label}</td></tr>)}</tbody></table>;
-  return <section id={state.id} role={state.role} aria-label={state.ariaLabel} tabIndex={state.tabIndex} style={panel} className="grid content-center"><h3 style={{ fontSize: state.titleSize, fontWeight: state.fontWeight }}>{state.title}</h3><p style={{ color: stringValue("muted", "#94a3b8"), fontSize: state.bodySize }}>{state.description}</p><div className="flex flex-wrap gap-2">{items.map((item) => badge(`${state.label} ${item}`))}</div><p className="text-xs" style={{ color: stringValue("muted", "#94a3b8") }}>{state.helper} · {stringValue("previewState", "default")}</p></section>;
+  const items = useMemo(() => createLightboxItems(state.mediaCount, state.label), [state.label, state.mediaCount]);
+  const initialIndex = Math.max(0, Math.min(items.length - 1, Math.round(state.activeIndex)));
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [open, setOpen] = useState(state.previewState !== "closed");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const activeItem = items[activeIndex] ?? items[0];
+  const titleId = `${state.id}-title`;
+  const captionId = `${state.id}-caption`;
+  const canMove = items.length > 1;
+  const transition = state.motion ? "transform 180ms ease, opacity 180ms ease, border-color 180ms ease" : "none";
+
+  useEffect(() => {
+    setActiveIndex(initialIndex);
+    setOpen(state.previewState !== "closed");
+  }, [initialIndex, state.previewState]);
+
+  useEffect(() => {
+    if (!open) return;
+    dialogRef.current?.focus();
+
+    if (!state.closeOnEscape) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        window.setTimeout(() => triggerRef.current?.focus(), 0);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, state.closeOnEscape]);
+
+  const previous = () => setActiveIndex((value) => (value - 1 + items.length) % items.length);
+  const next = () => setActiveIndex((value) => (value + 1) % items.length);
+  const close = () => {
+    setOpen(false);
+    window.setTimeout(() => triggerRef.current?.focus(), 0);
+  };
+
+  const rootStyle: CSSProperties = {
+    width: "min(100%, 920px)",
+    color: state.foreground,
+    fontFamily: state.fontFamily,
+    opacity: state.disabled ? 0.55 : 1,
+  };
+  const galleryButtonStyle: CSSProperties = {
+    display: "grid",
+    gap: state.gap,
+    width: "min(100%, 360px)",
+    padding: 12,
+    border: `${state.borderWidth}px solid ${state.border}`,
+    borderRadius: state.radius,
+    background: state.background,
+    color: state.foreground,
+    boxShadow: `0 ${Math.round(state.shadow / 4)}px ${state.shadow}px rgba(0,0,0,.24)`,
+    cursor: state.disabled ? "not-allowed" : "pointer",
+    textAlign: "left",
+    transition,
+  };
+  const overlayStyle: CSSProperties = {
+    position: "absolute",
+    inset: 0,
+    zIndex: 20,
+    display: "grid",
+    placeItems: "center",
+    padding: 24,
+    background: "rgba(2, 6, 23, .74)",
+    backdropFilter: "blur(12px)",
+  };
+  const dialogStyle: CSSProperties = {
+    width: `min(100%, ${state.width}px)`,
+    maxHeight: "92%",
+    display: "grid",
+    gap: state.gap,
+    padding: state.padding,
+    borderRadius: state.radius,
+    border: `${state.borderWidth}px solid ${state.border}`,
+    background: state.background,
+    color: state.foreground,
+    boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow + 24}px rgba(0,0,0,.38)`,
+    outline: "none",
+    transition,
+  };
+  const controlStyle: CSSProperties = {
+    border: `${state.borderWidth}px solid ${state.border}`,
+    borderRadius: Math.max(12, state.radius / 2),
+    padding: "0.65rem 0.9rem",
+    background: "rgba(255,255,255,.08)",
+    color: state.foreground,
+    fontWeight: 700,
+  };
+
+  return (
+    <section id={state.id} aria-label={state.ariaLabel} style={rootStyle}>
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={state.disabled}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={`${state.id}-dialog`}
+        onClick={() => setOpen(true)}
+        style={galleryButtonStyle}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={items[0].src} alt={items[0].alt} style={{ width: "100%", height: 190, objectFit: "cover", borderRadius: Math.max(10, state.radius - 8) }} />
+        <span style={{ display: "grid", gap: 4 }}>
+          <strong style={{ fontSize: state.titleSize, fontWeight: state.fontWeight }}>{state.title}</strong>
+          <span style={{ color: state.muted, fontSize: state.bodySize }}>{state.description}</span>
+          <span style={{ color: state.accent, fontSize: 12, fontWeight: 700 }}>{items.length} images. Open lightbox.</span>
+        </span>
+      </button>
+
+      {open && (
+        <div
+          role="presentation"
+          onMouseDown={(event) => {
+            if (state.closeOnOutside && event.target === event.currentTarget) close();
+          }}
+          style={overlayStyle}
+        >
+          <section
+            ref={dialogRef}
+            id={`${state.id}-dialog`}
+            role="dialog"
+            aria-modal={state.modal ? true : undefined}
+            aria-labelledby={titleId}
+            aria-describedby={state.showCaptions ? captionId : undefined}
+            tabIndex={-1}
+            style={dialogStyle}
+          >
+            <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16 }}>
+              <div>
+                <h3 id={titleId} style={{ margin: 0, fontSize: state.titleSize, fontWeight: state.fontWeight }}>{activeItem.title}</h3>
+                <p style={{ margin: "0.35rem 0 0", color: state.muted, fontSize: state.bodySize }}>{state.helper}</p>
+              </div>
+              <button type="button" onClick={close} aria-label="Close lightbox" style={controlStyle}>Close</button>
+            </div>
+
+            <figure style={{ display: "grid", gap: 12, margin: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={activeItem.src} alt={activeItem.alt} title={activeItem.title} style={{ width: "100%", maxHeight: state.height, objectFit: "cover", borderRadius: Math.max(12, state.radius - 10), border: `${state.borderWidth}px solid ${state.border}` }} />
+              {state.showCaptions && <figcaption id={captionId} style={{ color: state.muted, fontSize: state.bodySize }}>{activeItem.caption}</figcaption>}
+            </figure>
+
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" onClick={previous} disabled={!canMove} aria-label="Previous image" style={controlStyle}>Previous</button>
+                <button type="button" onClick={next} disabled={!canMove} aria-label="Next image" style={{ ...controlStyle, background: state.accent, color: "#020617" }}>Next</button>
+              </div>
+              <output aria-live="polite" style={{ color: state.muted, fontSize: 12 }}>{activeIndex + 1} of {items.length}</output>
+            </div>
+
+            {state.showThumbnails && (
+              <div role="list" aria-label="Lightbox thumbnails" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(items.length, 5)}, minmax(0, 1fr))`, gap: 8 }}>
+                {items.map((item, index) => (
+                  <button key={item.title} type="button" role="listitem" aria-label={`Show ${item.title}`} aria-current={index === activeIndex ? "true" : undefined} onClick={() => setActiveIndex(index)} style={{ border: `${state.borderWidth}px solid ${index === activeIndex ? state.accent : state.border}`, borderRadius: Math.max(10, state.radius / 3), padding: 3, background: "transparent" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.src} alt="" aria-hidden="true" style={{ width: "100%", height: 54, objectFit: "cover", borderRadius: Math.max(8, state.radius / 4) }} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      <style>{`@media (prefers-reduced-motion: reduce) { #${state.id} * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; } }`}</style>
+    </section>
+  );
 }
