@@ -56,7 +56,7 @@ export default function LivePreview({ state }: { state: LightboxState }) {
       if (event.key === "Escape") {
         event.preventDefault();
         setOpen(false);
-        window.setTimeout(() => triggerRef.current?.focus(), 0);
+        setTimeout(() => triggerRef.current?.focus(), 0);
       }
     };
 
@@ -68,7 +68,7 @@ export default function LivePreview({ state }: { state: LightboxState }) {
   const next = () => setActiveIndex((value) => (value + 1) % items.length);
   const close = () => {
     setOpen(false);
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
+    setTimeout(() => triggerRef.current?.focus(), 0);
   };
 
   const rootStyle: CSSProperties = {
