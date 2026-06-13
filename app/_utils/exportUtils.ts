@@ -44,7 +44,7 @@ export default function LightboxComponent() {
   const titleId = \`\${state.id}-title\`;
   const captionId = \`\${state.id}-caption\`;
   const canMove = items.length > 1;
-  const transition = state.motion ? "transform 180ms ease, opacity 180ms ease, border-color 180ms ease" : "none";
+  const transition = state.transitionDuration > 0 ? "$1" : "none";
 
   React.useEffect(() => {
     setActiveIndex(initialIndex);

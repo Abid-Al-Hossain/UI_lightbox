@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { LightboxState } from "../types";
+import { SYSTEM_FONTS } from "@/components/shared/typography/fontConstants";
 
 type LightboxItem = {
   src: string;
@@ -9,6 +10,24 @@ type LightboxItem = {
   title: string;
   caption: string;
 };
+
+function resolveFont(state: { fontBucket: "system" | "google"; googleFontFamily: string; systemFontIdx: number }): string {
+  return state.fontBucket === "google"
+    ? `"${state.googleFontFamily}", sans-serif`
+    : (SYSTEM_FONTS[state.systemFontIdx]?.css ?? "inherit");
+}
+
+function buildShadow(state: { shadowEnabled: boolean; shadowX: number; shadowY: number; shadowBlur: number; shadowSpread: number; shadowColor: string; shadowOpacity: number }): string {
+  if (!state.shadowEnabled) return "none";
+  const hex = Math.round(state.shadowOpacity * 255).toString(16).padStart(2, "0");
+  return `${state.shadowX}px ${state.shadowY}px ${state.shadowBlur}px ${state.shadowSpread}px ${state.shadowColor}${hex}`;
+}
+
+function buildRadius(state: { radiusLinked: boolean; radius: number; radiusTL: number; radiusTR: number; radiusBR: number; radiusBL: number }): string {
+  return state.radiusLinked
+    ? `${state.radius}px`
+    : `${state.radiusTL}px ${state.radiusTR}px ${state.radiusBR}px ${state.radiusBL}px`;
+}
 
 function createLightboxItems(count: number, label: string): LightboxItem[] {
   const safeCount = Math.max(1, Math.min(10, Math.round(count)));
@@ -39,7 +58,7 @@ export default function LivePreview({ state }: { state: LightboxState }) {
   const titleId = `${state.id}-title`;
   const captionId = `${state.id}-caption`;
   const canMove = items.length > 1;
-  const transition = state.motion ? "transform 180ms ease, opacity 180ms ease, border-color 180ms ease" : "none";
+  const transition = state.transitionDuration > 0 ? "transform 180ms ease, opacity 180ms ease, border-color 180ms ease" : "none";
 
   useEffect(() => {
     setActiveIndex(initialIndex);
@@ -74,7 +93,12 @@ export default function LivePreview({ state }: { state: LightboxState }) {
   const rootStyle: CSSProperties = {
     width: "min(100%, 920px)",
     color: state.foreground,
-    fontFamily: state.fontFamily,
+    fontFamily: resolveFont(state),
+    fontStyle: state.fontStyle,
+    textTransform: state.textTransform,
+    textDecoration: state.textDecoration,
+    letterSpacing: `${state.letterSpacing}${state.letterSpacingUnit}`,
+    lineHeight: state.lineHeight,
     opacity: state.disabled ? 0.55 : 1,
   };
   const galleryButtonStyle: CSSProperties = {
@@ -82,11 +106,11 @@ export default function LivePreview({ state }: { state: LightboxState }) {
     gap: state.gap,
     width: "min(100%, 360px)",
     padding: 12,
-    border: `${state.borderWidth}px solid ${state.border}`,
-    borderRadius: state.radius,
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
+    borderRadius: buildRadius(state),
     background: state.background,
     color: state.foreground,
-    boxShadow: `0 ${Math.round(state.shadow / 4)}px ${state.shadow}px rgba(0,0,0,.24)`,
+    boxShadow: `0 ${Math.round(state.shadowBlur / 4)}px ${state.shadowBlur}px rgba(0,0,0,.24)`,
     cursor: state.disabled ? "not-allowed" : "pointer",
     textAlign: "left",
     transition,
@@ -107,16 +131,16 @@ export default function LivePreview({ state }: { state: LightboxState }) {
     display: "grid",
     gap: state.gap,
     padding: state.padding,
-    borderRadius: state.radius,
-    border: `${state.borderWidth}px solid ${state.border}`,
+    borderRadius: buildRadius(state),
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
     background: state.background,
     color: state.foreground,
-    boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow + 24}px rgba(0,0,0,.38)`,
+    boxShadow: `0 ${Math.round(state.shadowBlur / 3)}px ${state.shadowBlur + 24}px rgba(0,0,0,.38)`,
     outline: "none",
     transition,
   };
   const controlStyle: CSSProperties = {
-    border: `${state.borderWidth}px solid ${state.border}`,
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
     borderRadius: Math.max(12, state.radius / 2),
     padding: "0.65rem 0.9rem",
     background: "rgba(255,255,255,.08)",
