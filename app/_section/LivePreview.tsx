@@ -99,16 +99,17 @@ export default function LivePreview({ state }: { state: LightboxState }) {
     textDecoration: state.textDecoration,
     letterSpacing: `${state.letterSpacing}${state.letterSpacingUnit}`,
     lineHeight: state.lineHeight,
-    opacity: state.disabled ? 0.55 : 1,
+    opacity: state.disabled ? state.disabledOpacity : 1,
+    cursor: state.disabled ? state.disabledCursor : undefined,
   };
   const galleryButtonStyle: CSSProperties = {
     display: "grid",
     gap: state.gap,
     width: "min(100%, 360px)",
     padding: 12,
-    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border}`,
     borderRadius: buildRadius(state),
-    background: state.background,
+    background: state.disabled && state.disabledUseCustomColors ? state.disabledBg : state.background,
     color: state.foreground,
     boxShadow: `0 ${Math.round(state.shadowBlur / 4)}px ${state.shadowBlur}px rgba(0,0,0,.24)`,
     cursor: state.disabled ? "not-allowed" : "pointer",
@@ -132,15 +133,15 @@ export default function LivePreview({ state }: { state: LightboxState }) {
     gap: state.gap,
     padding: state.padding,
     borderRadius: buildRadius(state),
-    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
-    background: state.background,
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border}`,
+    background: state.disabled && state.disabledUseCustomColors ? state.disabledBg : state.background,
     color: state.foreground,
     boxShadow: `0 ${Math.round(state.shadowBlur / 3)}px ${state.shadowBlur + 24}px rgba(0,0,0,.38)`,
     outline: "none",
     transition,
   };
   const controlStyle: CSSProperties = {
-    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border}`,
     borderRadius: Math.max(12, state.radius / 2),
     padding: "0.65rem 0.9rem",
     background: "rgba(255,255,255,.08)",
@@ -204,7 +205,7 @@ export default function LivePreview({ state }: { state: LightboxState }) {
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" onClick={previous} disabled={!canMove} aria-label="Previous image" style={controlStyle}>Previous</button>
-                <button type="button" onClick={next} disabled={!canMove} aria-label="Next image" style={{ ...controlStyle, background: state.accent, color: "#020617" }}>Next</button>
+                <button type="button" onClick={next} disabled={!canMove} aria-label="Next image" style={{ ...controlStyle, background: state.accent, color: state.actionText }}>Next</button>
               </div>
               <output aria-live="polite" style={{ color: state.muted, fontSize: 12 }}>{activeIndex + 1} of {items.length}</output>
             </div>

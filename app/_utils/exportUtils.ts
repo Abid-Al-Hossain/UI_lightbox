@@ -44,7 +44,7 @@ export default function LightboxComponent() {
   const titleId = \`\${state.id}-title\`;
   const captionId = \`\${state.id}-caption\`;
   const canMove = items.length > 1;
-  const transition = state.transitionDuration > 0 ? "$1" : "none";
+  const transition = state.transitionDuration > 0 ? "all " + state.transitionDuration + "ms " + state.transitionEasing : "none";
 
   React.useEffect(() => {
     setActiveIndex(initialIndex);
@@ -75,11 +75,11 @@ export default function LightboxComponent() {
     setOpen(false);
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   };
-  const rootStyle = { width: "min(100%, 920px)", color: state.foreground, fontFamily: state.fontFamily, opacity: state.disabled ? 0.55 : 1 };
-  const galleryButtonStyle = { display: "grid", gap: state.gap, width: "min(100%, 360px)", padding: 12, border: state.borderWidth + "px solid " + state.border, borderRadius: state.radius, background: state.background, color: state.foreground, boxShadow: \`0 \${Math.round(state.shadow / 4)}px \${state.shadow}px rgba(0,0,0,.24)\`, cursor: state.disabled ? "not-allowed" : "pointer", textAlign: "left", transition };
+  const rootStyle = { width: "min(100%, 920px)", color: state.foreground, fontFamily: resolveFont(state), opacity: state.disabled ? (state.disabledOpacity ?? 0.5) : 1 };
+  const galleryButtonStyle = { display: "grid", gap: state.gap, width: "min(100%, 360px)", padding: 12, border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), borderRadius: state.radius, background: state.background, color: state.foreground, boxShadow: \`0 \${Math.round(state.shadow / 4)}px \${state.shadow}px rgba(0,0,0,.24)\`, cursor: state.disabled ? state.disabledCursor : "pointer", textAlign: "left", transition };
   const overlayStyle = { position: "fixed", inset: 0, zIndex: 50, display: "grid", placeItems: "center", padding: 24, background: "rgba(2, 6, 23, .74)", backdropFilter: "blur(12px)" };
-  const dialogStyle = { width: \`min(100%, \${state.width}px)\`, maxHeight: "92vh", display: "grid", gap: state.gap, padding: state.padding, borderRadius: state.radius, border: state.borderWidth + "px solid " + state.border, background: state.background, color: state.foreground, boxShadow: \`0 \${Math.round(state.shadow / 3)}px \${state.shadow + 24}px rgba(0,0,0,.38)\`, outline: "none", transition };
-  const controlStyle = { border: state.borderWidth + "px solid " + state.border, borderRadius: Math.max(12, state.radius / 2), padding: "0.65rem 0.9rem", background: "rgba(255,255,255,.08)", color: state.foreground, fontWeight: 700 };
+  const dialogStyle = { width: \`min(100%, \${state.width}px)\`, maxHeight: "92vh", display: "grid", gap: state.gap, padding: state.padding, borderRadius: state.radius, border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), background: state.background, color: state.foreground, boxShadow: \`0 \${Math.round(state.shadow / 3)}px \${state.shadow + 24}px rgba(0,0,0,.38)\`, outline: "none", transition };
+  const controlStyle = { border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), borderRadius: Math.max(12, state.radius / 2), padding: "0.65rem 0.9rem", background: "rgba(255,255,255,.08)", color: state.foreground, fontWeight: 700 };
 
   return (
     <section id={state.id} aria-label={state.ariaLabel} style={rootStyle}>
@@ -128,14 +128,14 @@ export default function LightboxComponent() {
             </div>
 
             <figure style={{ display: "grid", gap: 12, margin: 0 }}>
-              <img src={activeItem.src} alt={activeItem.alt} title={activeItem.title} style={{ width: "100%", maxHeight: state.height, objectFit: "cover", borderRadius: Math.max(12, state.radius - 10), border: state.borderWidth + "px solid " + state.border }} />
+              <img src={activeItem.src} alt={activeItem.alt} title={activeItem.title} style={{ width: "100%", maxHeight: state.height, objectFit: "cover", borderRadius: Math.max(12, state.radius - 10), border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border) }} />
               {state.showCaptions && <figcaption id={captionId} style={{ color: state.muted, fontSize: state.bodySize }}>{activeItem.caption}</figcaption>}
             </figure>
 
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" onClick={previous} disabled={!canMove} aria-label="Previous image" style={controlStyle}>Previous</button>
-                <button type="button" onClick={next} disabled={!canMove} aria-label="Next image" style={{ ...controlStyle, background: state.accent, color: "#020617" }}>Next</button>
+                <button type="button" onClick={next} disabled={!canMove} aria-label="Next image" style={{ ...controlStyle, background: state.accent, color: state.actionText }}>Next</button>
               </div>
               <output aria-live="polite" style={{ color: state.muted, fontSize: 12 }}>{activeIndex + 1} of {items.length}</output>
             </div>
@@ -143,7 +143,7 @@ export default function LightboxComponent() {
             {state.showThumbnails && (
               <div role="list" aria-label="Lightbox thumbnails" style={{ display: "grid", gridTemplateColumns: \`repeat(\${Math.min(items.length, 5)}, minmax(0, 1fr))\`, gap: 8 }}>
                 {items.map((item, index) => (
-                  <button key={item.title} type="button" role="listitem" aria-label={\`Show \${item.title}\`} aria-current={index === activeIndex ? "true" : undefined} onClick={() => setActiveIndex(index)} style={{ border: state.borderWidth + "px solid " + (index === activeIndex ? state.accent : state.border), borderRadius: Math.max(10, state.radius / 3), padding: 3, background: "transparent" }}>
+                  <button key={item.title} type="button" role="listitem" aria-label={\`Show \${item.title}\`} aria-current={index === activeIndex ? "true" : undefined} onClick={() => setActiveIndex(index)} style={{ border: state.borderWidth + "px " + state.borderStyle + " " + (index === activeIndex ? state.accent : state.border), borderRadius: Math.max(10, state.radius / 3), padding: 3, background: "transparent" }}>
                     <img src={item.src} alt="" aria-hidden="true" style={{ width: "100%", height: 54, objectFit: "cover", borderRadius: Math.max(8, state.radius / 4) }} />
                   </button>
                 ))}

@@ -7,7 +7,18 @@ import type { LightboxState } from "../types";
 type Props = { state: LightboxState; update: <K extends keyof LightboxState>(key: K, value: LightboxState[K]) => void };
 
 export default function BehaviorSection({ state, update }: Props) {
-  return <SectionCard title="Behavior" subtitle="Behavior controls for native lightbox generation."><Switch label="Close on Escape" checked={state.closeOnEscape} onChange={(value) => update("closeOnEscape", value)} />
-<Switch label="Close outside" checked={state.closeOnOutside} onChange={(value) => update("closeOnOutside", value)} />
-<Switch label="Disabled" checked={state.disabled} onChange={(value) => update("disabled", value)} /></SectionCard>;
+  return (
+    <div className="space-y-4">
+      <SectionCard title="Dismiss" subtitle="How the lightbox closes.">
+        <Switch label="Modal (aria-modal)" checked={state.modal} onChange={(value) => update("modal", value)} />
+        <Switch label="Close on Escape" checked={state.closeOnEscape} onChange={(value) => update("closeOnEscape", value)} />
+        <Switch label="Close on outside click" checked={state.closeOnOutside} onChange={(value) => update("closeOnOutside", value)} />
+      </SectionCard>
+      <SectionCard title="Content" subtitle="Thumbnails, captions, and disabled state.">
+        <Switch label="Show thumbnails" checked={state.showThumbnails} onChange={(value) => update("showThumbnails", value)} />
+        <Switch label="Show captions" checked={state.showCaptions} onChange={(value) => update("showCaptions", value)} />
+        <Switch label="Disabled" checked={state.disabled} onChange={(value) => update("disabled", value)} />
+      </SectionCard>
+    </div>
+  );
 }
