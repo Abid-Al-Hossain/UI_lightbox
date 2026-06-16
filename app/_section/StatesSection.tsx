@@ -8,7 +8,8 @@ import type { LightboxState } from "../types";
 type Props = { state: LightboxState; update: <K extends keyof LightboxState>(key: K, value: LightboxState[K]) => void };
 
 export default function StatesSection({ state, update }: Props) {
-  return <SectionCard title="State Preview" subtitle="State Preview controls for native lightbox generation."><Select label="Preview state" value={state.previewState} options={[
+  return <SectionCard title="State Preview" subtitle="State Preview controls for native lightbox generation.">
+      <div className="space-y-4"><Select label="Preview state" value={state.previewState} options={[
   "default",
   "hover",
   "focus",
@@ -21,5 +22,6 @@ export default function StatesSection({ state, update }: Props) {
   "error",
   "success"
 ]} onChange={(value) => update("previewState", value)} />
-<Slider label="Active index" value={state.activeIndex} min={0} max={12} step={1} onChange={(value) => update("activeIndex", value)} /></SectionCard>;
+<Slider label="Active index" value={state.activeIndex} min={0} max={12} step={1} onChange={(value) => update("activeIndex", value)} /></div>
+    </SectionCard>;
 }
