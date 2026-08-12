@@ -14,6 +14,9 @@ export function buildReactCode(state: LightboxState) {
   return `import * as React from "react";
 
 const state = ${JSON.stringify(exportState, null, 2)};
+const systemFonts = ${JSON.stringify(["Arial, system-ui","Consolas, \"Liberation Mono\", \"Courier New\", ui-monospace, monospace","\"Courier New\", ui-monospace, monospace","Georgia, ui-serif, serif","Helvetica, Arial, system-ui","Menlo, Monaco, Consolas, \"Liberation Mono\", ui-monospace, monospace","Monaco, Menlo, Consolas, \"Liberation Mono\", ui-monospace, monospace","Roboto, system-ui, -apple-system, Arial","\"Segoe UI\", system-ui, -apple-system, Arial","system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial","\"Times New Roman\", Times, ui-serif, serif","ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace","ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial","ui-serif, Georgia, Cambria, \"Times New Roman\", Times, serif"])};
+function resolveFont(s) { return s.fontBucket === "google" ? '"' + s.googleFontFamily + '", sans-serif' : (systemFonts[s.systemFontIdx] || "system-ui"); }
+function buildShadow(s) { if (!s.shadowEnabled) return "none"; var hex = Math.round(s.shadowOpacity * 255).toString(16).padStart(2, "0"); return s.shadowX + "px " + s.shadowY + "px " + s.shadowBlur + "px " + s.shadowSpread + "px " + s.shadowColor + hex; }
 
 function createLightboxItems(count, label) {
   const safeCount = Math.max(1, Math.min(10, Math.round(count)));
@@ -76,9 +79,9 @@ export default function LightboxComponent() {
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   };
   const rootStyle = { width: "min(100%, 920px)", color: state.foreground, fontFamily: resolveFont(state), opacity: state.disabled ? (state.disabledOpacity ?? 0.5) : 1 };
-  const galleryButtonStyle = { display: "grid", gap: state.gap, width: "min(100%, 360px)", padding: 12, border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), borderRadius: state.radius, background: state.background, color: state.foreground, boxShadow: \`0 \${Math.round(state.shadow / 4)}px \${state.shadow}px rgba(0,0,0,.24)\`, cursor: state.disabled ? state.disabledCursor : "pointer", textAlign: "left", transition };
+  const galleryButtonStyle = { display: "grid", gap: state.gap, width: "min(100%, 360px)", padding: 12, border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), borderRadius: state.radius, background: state.background, color: state.foreground, boxShadow: buildShadow(state), cursor: state.disabled ? state.disabledCursor : "pointer", textAlign: "left", transition };
   const overlayStyle = { position: "fixed", inset: 0, zIndex: 50, display: "grid", placeItems: "center", padding: 24, background: "rgba(2, 6, 23, .74)", backdropFilter: "blur(12px)" };
-  const dialogStyle = { width: \`min(100%, \${state.width}px)\`, maxHeight: "92vh", display: "grid", gap: state.gap, padding: state.padding, borderRadius: state.radius, border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), background: state.background, color: state.foreground, boxShadow: \`0 \${Math.round(state.shadow / 3)}px \${state.shadow + 24}px rgba(0,0,0,.38)\`, outline: "none", transition };
+  const dialogStyle = { width: \`min(100%, \${state.width}px)\`, maxHeight: "92vh", display: "grid", gap: state.gap, padding: state.padding, borderRadius: state.radius, border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), background: state.background, color: state.foreground, boxShadow: buildShadow(state), outline: "none", transition };
   const controlStyle = { border: state.borderWidth + "px " + state.borderStyle + " " + (state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border), borderRadius: Math.max(12, state.radius / 2), padding: "0.65rem 0.9rem", background: "rgba(255,255,255,.08)", color: state.foreground, fontWeight: 700 };
 
   return (

@@ -61,11 +61,6 @@ export default function LivePreview({ state }: { state: LightboxState }) {
   const transition = state.transitionDuration > 0 ? "transform 180ms ease, opacity 180ms ease, border-color 180ms ease" : "none";
 
   useEffect(() => {
-    setActiveIndex(initialIndex);
-    setOpen(state.previewState !== "closed");
-  }, [initialIndex, state.previewState]);
-
-  useEffect(() => {
     if (!open) return;
     dialogRef.current?.focus();
 
